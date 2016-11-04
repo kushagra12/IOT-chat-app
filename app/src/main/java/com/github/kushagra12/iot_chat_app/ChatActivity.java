@@ -1,10 +1,14 @@
 package com.github.kushagra12.iot_chat_app;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.speech.RecognizerIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -14,14 +18,18 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ChatActivity extends AppCompatActivity {
 
     private ListView listView;
     private View btnSend;
+    private ImageButton btnSpeak;
     private EditText editText;
     private List<ChatMessage> chatMessages;
     private ArrayAdapter<ChatMessage> adapter;
+
+    private final int REQ_CODE_SPEECH_INPUT = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +51,12 @@ public class ChatActivity extends AppCompatActivity {
                 if(str != null){
                     try {
                         JSONObject obj = new JSONObject(str);
-                        if(obj.getString("client").equals("node"))
+                        if(obj.getString("client").equals("node")) {
                             chatMessages.add(new ChatMessage(obj.getString("message"), true));
+                            String responseAction = obj.getString("response_action");
+                            if(responseAction != null && responseAction != "")
+                                performResponse(responseAction);
+                        }
                         else
                             chatMessages.add(new ChatMessage(obj.getString("message"), false));
                     } catch (JSONException e) {
@@ -57,6 +69,7 @@ public class ChatActivity extends AppCompatActivity {
 
         listView = (ListView) findViewById(R.id.list_msg);
         btnSend = findViewById(R.id.btn_chat_send);
+        btnSpeak = (ImageButton) findViewById(R.id.btn_speak);
         editText = (EditText) findViewById(R.id.msg_type);
 
         //set ListView adapter first
@@ -76,6 +89,57 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
+
+        btnSpeak.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                promptSpeechInput();
+            }
+        });
+    }
+
+    private void promptSpeechInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                getString(R.string.speech_prompt));
+        try {
+            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
+        } catch (ActivityNotFoundException a) {
+            Toast.makeText(getApplicationContext(),
+                    getString(R.string.speech_not_supported),
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private void performResponse(String responseAction){
+        switch (responseAction){
+            case "call.doctor":
+                break;
+        }
+    }
+    /**
+     * Receiving speech input
+     * */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQ_CODE_SPEECH_INPUT: {
+                if (resultCode == RESULT_OK && null != data) {
+
+                    ArrayList<String> result = data
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    editText.setText(result.get(0));
+                }
+                break;
+            }
+
+        }
     }
 }
 
