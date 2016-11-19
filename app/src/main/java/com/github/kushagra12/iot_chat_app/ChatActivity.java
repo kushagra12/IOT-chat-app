@@ -1,8 +1,12 @@
 package com.github.kushagra12.iot_chat_app;
 
+import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.speech.RecognizerIntent;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -48,16 +52,14 @@ public class ChatActivity extends AppCompatActivity {
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-                if(str != null){
+                if (str != null) {
                     try {
                         JSONObject obj = new JSONObject(str);
-                        if(obj.getString("client").equals("node")) {
+                        if (obj.getString("client").equals("node")) {
                             chatMessages.add(new ChatMessage(obj.getString("message"), true));
                             String responseAction = obj.getString("response_action");
-                            if(responseAction != null && responseAction != "")
-                                performResponse(responseAction);
-                        }
-                        else
+                            performResponse(responseAction);
+                        } else
                             chatMessages.add(new ChatMessage(obj.getString("message"), false));
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -115,11 +117,17 @@ public class ChatActivity extends AppCompatActivity {
     }
 
 
-    private void performResponse(String responseAction){
-        switch (responseAction){
+    private void performResponse(String responseAction) {
+        switch (responseAction) {
             case "call.doctor":
+                callDoctor();
                 break;
         }
+    }
+
+    private void callDoctor() {
+        Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + "994342622"));
+        startActivity(intent);
     }
     /**
      * Receiving speech input
